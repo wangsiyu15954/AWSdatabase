@@ -1,0 +1,111 @@
+import glob
+import os
+import pdfplumber
+import shutil
+import win32api,win32con
+import pymysql
+import sys
+
+DBHOST='172.26.90.183'
+DBUSER='root'
+DBPASS='root'
+DBNAME='awsdatabase'
+
+
+try:
+    conn = pymysql.connect(host=DBHOST, user=DBUSER, password=DBPASS, database=DBNAME)
+    print('数据库连接成功')
+    # 使用 cursor() 方法创建一个游标对象 cursor
+except pymysql.Error as e:
+    print('数据库连接失败'+str(e))
+cursor = conn.cursor()
+# 使用 execute() 方法执行 SQL，如果表存在则删除
+cursor.execute("DROP TABLE IF EXISTS pdftextextract")
+# 使用预处理语句创建表
+sql = """CREATE TABLE pdftextextract (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     PAGENAME LONGTEXT,
+     PAGE1 LONGTEXT,
+     PAGE2 LONGTEXT,
+     PAGE3 LONGTEXT,
+     PAGE4 LONGTEXT,
+     PAGE5 LONGTEXT,
+     PAGE6 LONGTEXT,
+     PAGE7 LONGTEXT,
+     PAGE8 LONGTEXT,
+     PAGE9 LONGTEXT,
+     PAGE10 LONGTEXT,
+     PAGE11 LONGTEXT,
+     PAGE12 LONGTEXT,
+     PAGE13 LONGTEXT,
+     PAGE14 LONGTEXT,
+     PAGE15 LONGTEXT,
+     PAGE16 LONGTEXT,
+     PAGE17 LONGTEXT,
+     PAGE18 LONGTEXT,
+     PAGE19 LONGTEXT,
+     PAGE20 LONGTEXT,
+     PAGE21 LONGTEXT,
+     PAGE22 LONGTEXT,
+     PAGE23 LONGTEXT,
+     PAGE24 LONGTEXT,
+     PAGE25 LONGTEXT)"""
+
+cursor.execute(sql)
+
+print("CREATE TABLE OK")
+# 关闭数据库连接
+conn.commit()
+cursor.close()
+conn.close()
+
+
+pdf_path="D:/15954/AWSdataanalyse/pdf/"
+pdfs=glob.glob("{}/*.pdf".format(pdf_path))
+print(pdfs)
+c=1
+for j in range(0, len(pdfs)):
+    print(len(pdfs))
+    with pdfplumber.open(pdfs[j]) as pdf:
+        print(len(pdf.pages))
+        pagecontent=[]
+
+        try:
+            conn = pymysql.connect(host=DBHOST, user=DBUSER, password=DBPASS, database=DBNAME)
+            print('数据库连接成功')
+            # 使用 cursor() 方法创建一个游标对象 cursor
+        except pymysql.Error as e:
+            print('数据库连接失败' + str(e))
+        cursor = conn.cursor()
+        cursor.execute("SELECT * from pdftextextract")
+
+        print(len(cursor.fetchall()))
+        number=0
+
+        if j==0:
+            number = 1
+            print("flag")
+        elif j!=0:
+            cursor.execute("SELECT MAX(id) from pdftextextract")
+            print(cursor.fetchall())
+            c=c+1
+            number=c
+
+            print(number)
+        # 使用 execute() 方法执行 SQL，如果表存在则删除
+        a=["0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]
+        for i in range (0,len(pdf.pages)):
+            page=pdf.pages[i]
+            print(page.extract_text().replace('\n', '').replace("'",''))
+            a[i]=page.extract_text().replace('\n', '').replace("'",'')
+        print(a)
+
+        m=pdfs[j].split("\\")[1]
+        cursor.execute(
+            "INSERT INTO pdftextextract VALUES(%d,'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s' )" % (
+            number, m, a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8],a[9],a[10],a[11],a[12],a[13],a[14],a[15],a[16],a[17],a[18],a[19],a[20],a[21],a[22],a[23],a[24]))
+
+
+        conn.commit()
+        cursor.close()
+        conn.close()
